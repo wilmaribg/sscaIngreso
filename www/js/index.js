@@ -17,14 +17,42 @@
  * under the License.
  */
  function Escanear(){
+    
+    function saveOffline(datos) {
+        if(! navigator.onLine) {
+            var $_datos = datos;
+            var $_data = localStorage.getItem('offLineData');  
+            $_storage = [];
+            var $_requets_to_save = {
+                uri: 'http://190.60.211.17/Fontan/index.php/registro_control/generarRegistroControl',
+                data: $_datos 
+            };
+
+            if($_data != null) {
+                $_storage = JSON.parse($_data);
+            }
+
+            $_storage.push($_requets_to_save);
+            $_storage = JSON.stringify($_storage);
+            localStorage.setItem('offLineData', $_storage);
+            alertify.alert('Datos guardados offline');
+        }else{
+            alertify.alert('Lo sentimos, no se pudo procesar tu solicitud. \nPrueba de nuevo.')
+        }
+    }
+
     cordova.plugins.barcodeScanner.scan(
             
         function (result) {
             if(result.cancelled != true){
+                var _time = new Date();
+                
+                var datos = {
+                    idCredencial: result.text,
+                    _fecha: _time.toLocaleDateString(),
+                    _hora: _time.toLocaleTimeString(),
+                }   
                 if (navigator.onLine) {
-                    var datos = {
-                        idCredencial: result.text
-                    }   
                     $.post("http://190.60.211.17/Fontan/index.php/registro_control/generarRegistroControl", datos)
                     .done(function( data ) {
                         console.log(data)
@@ -46,9 +74,12 @@
                             }, 3000);
                         }
                       
+                    }).fail(function(error) { 
+                        saveOffline(datos);
                     });
                 }else {
-                    alert('Usted no tiene conexion a internet en estos momentos. Por favor verifiquela antes de iniciar sesión.')
+                    saveOffline(datos);
+                    // alert('Usted no tiene conexion a internet en estos momentos. Por favor verifiquela antes de iniciar sesión.')
                 }
             }
         },
